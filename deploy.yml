@@ -3,9 +3,13 @@
   hosts: prod
   become: true
   pre_tasks:
-    - name: "install EPEL rep"
-      package: name=epel-release state=present
+    - name: "install package"
+      package: name='{{ item }}' state=present
       when: ansible_distribution == "CentOS"
+      loop:
+        - epel-release
+        - git
+        - wget
     - name: "download pip script"
       get_url:
         url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
@@ -15,9 +19,15 @@
     - name: "install docker for python"
       pip: name=docker-py
   tasks:
+    - name: "copy website file template"
+      template:
+        src: index.html.j2
+        dest: /home/admin/index.html
     - name: "Create Apache container"
       docker_container:
         name: webapp
         image: httpd
         ports:
           - "80:80"
+        volumes:
+          - /home/admin/index.html:/usr/local/apache2/htdocs/index.html
